@@ -1,0 +1,16 @@
+spring.application.name: board3
+
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/board3_db
+    username: root
+    password: 1111
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create
+
+  mvc:
+    pathmatch:
+      matching-strategy=ant_path_matcher:
