@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/header :: header}"></head>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script th:inline="javascript">
+
+    var loginverfiy = false;
+
+    $(document).ready(function () {
+        var login = document.getElementById('loginMember_username').value;
+        if (login) {
+            loginverfiy = true;
+        }
+    });
+
+    function writing() {
+        if (loginverfiy) {
+            window.location.href = "/boardWrit";
+        } else {
+            alert("로그인 먼저 해주세요");
+        }
+    }
+
+    function getValueFromButton(selector) {
+        var button = document.querySelector(selector);
+        return button ? button.getAttribute('data-value') : null;
+    }
+
+    function likeson() {
+        var value = getValueFromButton('.dropdown-item[data-value="likeType"]');
+        if (value) window.location.href = "/board/sortType?sortBoard=" + value;
+    }
+
+    function manyComment() {
+        var value = getValueFromButton('.dropdown-item[data-value="manyCountType"]');
+        if (value) window.location.href = "/board/sortType?sortBoard=" + value;
+    }
+
+    function manyView() {
+        var value = getValueFromButton('.dropdown-item[data-value="manyViewType"]');
+        if (value) window.location.href = "/board/sortType?sortBoard=" + value;
+    }
+
+    function lastBoard() {
+        var value = getValueFromButton('.dropdown-item[data-value="lastBoardType"]');
+        if (value) window.location.href = "/board/sortType?sortBoard=" + value;
+    }
+</script>
+
+<body>
+<nav class="navbar navbar-expand-lg bg-body-tertiary">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#" th:href="@{/}">CRUD 게시판</a>
+        <div class="collapse navbar-collapse" id="navbarNavDropdown">
+            <ul class="navbar-nav">
+                <div th:if="${loginMember != null}" class="d-flex justify-content-between">
+                    <div class="d-flex justify-content-between">
+                        <div class="nav-item">
+                            <a class="nav-link active" aria-current="page" th:text="'사용자: ' + ${loginMember.username}">Home</a>
+                        </div>
+                        <div class="nav-item">
+                            <form th:action="@{/logout}" method="post">
+                                <button type="submit" class="btn btn-link">로그아웃</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div th:if="${loginMember == null}" class="d-flex justify-content-between">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" th:href="@{/login}">로그인</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/createMember}">회원가입</a>
+                    </li>
+                </div>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div> 총 상품수 :
+    <span th:text="${page.totalElements}">19</span>
+</div>
+
+<form method="get" th:action="@{/board}">
+    <div class="col-6 d-flex justify-center">
+        <label for="title" class="visually-hidden">검색</label>
+        <input type="text" class="form-control flex-grow-1 me-2" id="title" name="title">
+        <button type="submit" class="btn btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
+                <path d="M11.742 9.672a6.5 6.5 0 1 0-1.07 1.07l3.53 3.53a.75.75 0 0 0 1.06-1.06l-3.52-3.54zM10.5 6A4.5 4.5 0 1 1 6 1.5 4.5 4.5 0 0 1 10.5 6z"/>
+            </svg>
+        </button>
+    </div>
+</form>
+
+<div class="btn-group">
+    <li class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+        정렬기준 선택하기
+    </li>
+    <ul class="dropdown-menu dropdown-menu-end">
+        <li><button class="dropdown-item" type="button" data-value="lastBoardType" onclick="lastBoard()">최신글순</button></li>
+        <li><button class="dropdown-item" type="button" data-value="likeType" onclick="likeson()">좋아요순</button></li>
+        <li><button class="dropdown-item" type="button" data-value="manyCountType" onclick="manyComment()">많은댓글순</button></li>
+        <li><button class="dropdown-item" type="button" data-value="manyViewType" onclick="manyView()">조회수순</button></li>
+    </ul>
+</div>
+
+<table class="table">
+    <thead>
+    <tr>
+        <th scope="col">#</th>
+        <th scope="col">제목</th>
+        <th scope="col">작성자</th>
+        <th scope="col">작성일</th>
+        <th scope="col">조회수</th>
+    </tr>
+    </thead>
+
+    <tbody th:each="boards: ${boardAll}">
+    <tr>
+        <th scope="row">
+            <input type="hidden" th:value="${boards.id}" id="board_Id">
+            <a th:href="@{/board/{boardId}(boardId=${boards.id})}" th:text="${boards.id}"/>
+        </th>
+        <td>
+            <span th:text="${boards.title}">제목</span>
+        </td>
+        <td th:text="${boards.writer}">김민우</td>
+        <td th:text="${#temporals.format(boards.dateTime, 'yyyy-MM-dd')}">오늘작성</td>
+        <td th:text="${boards.views}">111</td>
+    </tr>
+    </tbody>
+</table>
+
+<div class="d-flex justify-content-end">
+    <button onclick="writing()">글쓰기</button>
+</div>
+
+<nav aria-label="Page navigation example">
+    <ul class="pagination justify-content-center">
+        <li class="page-item " th:classappend="${1 == page.pageable.pageNumber +1}?'disabled'">
+            <a class="page-link" href="#" th:href="@{/board(page=${page.pageable.pageNumber - 1})}" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+            </a>
+        </li>
+        <li class="page-item" th:classappend="${i == page.pageable.pageNumber+1}? 'disabled'" th:each="i : ${#numbers.sequence(startPage,endPage)}">
+            <a class="page-link" href="#" th:href="@{/board(page=${i} -1)}" th:text="${i}" >pageNumber</a>
+        </li>
+        <li class="page-item" th:classappend="${page.totalPages == page.pageable.pageNumber +1 } ? 'disabled'">
+            <a class="page-link" href="#"  th:href="@{/board(page=${page.pageable.pageNumber+1})}">
+                <span aria-hidden="true">&raquo;</span>
+            </a>
+        </li>
+    </ul>
+</nav>
+
+<div th:if="${loginMember != null}">
+    <input type="hidden" id="loginMember_username" th:value="${loginMember.username}">
+</div>
+
+</body>
+</html>

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/header :: header}"></head>
+
+<body>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script th:inline="javascript">
+    var loginverfiy = false;
+
+    $(document).ready(function () {
+        var login = document.getElementById('loginMember_username');
+
+        if (login !== null) {
+            loginverfiy = true;
+        }
+
+        // Event handlers can be defined here
+        $('#updateBoardButton').click(function() {
+            alert("수정 버튼 동작");
+        });
+
+        $('#deleteBoardButton').click(function() {
+            boardDelete(); // 수정된 부분
+            alert("삭제 버튼 동작");
+        });
+
+        $('#listButton').click(function() {
+            window.location.href = "/board";
+        });
+    });
+
+    function openModal() {
+        document.getElementById('passwordModal').style.display = 'block';
+    }
+
+    function closeModal() {
+        document.getElementById('passwordModal').style.display = 'none';
+    }
+
+    function updateBoardPage() {
+        // 비밀번호 입력 모달 창 열기
+        if(loginverfiy === true) {
+            openModal();
+        } else {
+            alert("권한이 없습니다.");
+        }
+    }
+
+    function verifyPassword() {
+        const passwordInput = document.getElementById('password').value;
+        const id = document.getElementById('input_id').value;
+        const loginMember = document.getElementById('loginMember_username').value;
+
+        var dto = {
+            "id": id,
+            "password": passwordInput,
+            "memberDto": {
+                "username": loginMember
+            }
+        };
+
+        $.ajax({
+            url: "/password/verify",
+            method: "post",
+            contentType: "application/json",
+            data: JSON.stringify(dto),
+
+            success: function (response) {
+                if (response === 1) {
+                    alert("비밀번호 검증 성공");
+                    window.location.href = "/board/update/" + id;
+                }
+            },
+            error: function (xhr) {
+                if (xhr.status === 500) {
+                    alert("오류 발생");
+                }
+                if (xhr.status === 400) {
+                    alert("비밀번호가 일치하지 않습니다.");
+                }
+                if (xhr.status === 401) {
+                    alert("등록한 사용자만 수정할 수 있습니다.");
+                }
+                if (xhr.status === 404) {
+                    alert("해당 게시물이 더 이상 존재하지 않습니다.");
+                    window.location = "/board";
+                }
+            }
+        });
+    }
+
+    function boardDelete() {
+        if (loginverfiy === true) {
+            var BoardConfirm = confirm("정말로 삭제 하시겠습니까?");
+
+            if (BoardConfirm) {
+                var id = document.getElementById('input_id').value;
+                var login_username = document.getElementById('loginMember_username').value;
+
+                var dto = {
+                    "id": id,
+                    "memberDto": {
+                        "username": login_username // login 대신 login_username 사용
+                    }
+                };
+
+                console.log("AJAX 요청 전송:", dto); // AJAX 요청 전에 로그 추가
+                $.ajax({
+                    url: "/board/" + id, // URL 수정
+                    method: "DELETE",
+                    contentType: "application/json",
+                    data: JSON.stringify(dto),
+
+                    success: function (response) {
+                        alert("삭제성공");
+                        window.location.href = "/board";
+                    },
+                    error: function (xhr) {
+                        if (xhr.status === 500) {
+                            alert("삭제도중 오류발생");
+                        }
+                        if (xhr.status === 401) {
+                            alert("등록된 사용자만 삭제가능");
+                        }
+                    }
+                });
+            }
+        } else {
+            alert("권한이 없습니다.");
+        }
+    }
+</script>
+
+<nav class="navbar navbar-expand-lg bg-body-tertiary">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#" th:href="@{/}">CRUD 게시판</a>
+        <div class="collapse navbar-collapse" id="navbarNavDropdown">
+            <ul class="navbar-nav">
+                <div th:if="${loginMember != null}" class="d-flex justify-content-between">
+                    <div class="nav-item">
+                        <a class="nav-link active" aria-current="page" th:text="'사용자: ' + ${loginMember.username}">Home</a>
+                    </div>
+                    <div class="nav-item">
+                        <form th:action="@{/logout}" method="post">
+                            <button type="submit" class="btn btn-link">로그아웃</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div th:if="${loginMember == null}" class="d-flex justify-content-between">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" th:href="@{/login}">로그인</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/createMember}">회원가입</a>
+                    </li>
+                </div>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div th:object="${board}">
+
+    <div class="container mt-4">
+        <div class="block table-responsive grid-view">
+            <table class="table table-bordered">
+                <hr class="my-4"/>
+                <colgroup>
+                    <col style="width:15%;">
+                    <col>
+                    <col style="width:15%;">
+                    <col>
+                </colgroup>
+                <thead>
+                <tr>
+                    <th colspan="4">
+                        <div class="col-md-12">
+                            <span id="text_title" th:text="*{title}"></span>
+                            <button type="button" onclick="updateBoardPage()">수정</button>
+                            <button id="deleteBoardButton" type="button" class="btn btn-danger">삭제</button>
+                            <button id="listButton" type="button" class="btn btn-info">목록</button>
+                        </div>
+                    </th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <th>등록자명</th>
+                    <td th:text="*{writer}"></td>
+                    <th>등록일</th>
+                    <td th:text="${#temporals.format(board.dateTime, 'yyyy-MM-dd')}">2024-01-20 15:46:22</td>
+                </tr>
+                <tr>
+                    <th>조회수</th>
+                    <td colspan="3" th:text="*{views}">5</td>
+                </tr>
+                <tr>
+                    <td colspan="4">
+                        <div class="col-md-9 board-contents" th:text="*{content}">
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <input type="hidden" id="input_id" th:value="*{id}">
+        <input th:if="${loginMember != null}" type="hidden" id="loginMember_username" th:value="${loginMember.username}">
+    </div>
+
+    <div id="passwordModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <label for="password">비밀번호를 입력하세요:</label>
+            <input type="password" id="password">
+            <button onclick="verifyPassword()">확인</button>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>
